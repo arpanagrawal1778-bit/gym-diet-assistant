@@ -45,12 +45,12 @@ async function me() {
 function logout() {
   api.post('/auth/logout', {}, { noRedirect: true });
   store.clearAuth();
-  navigate('/login');
+  window.location.hash = '#/login';
 }
 
 function requireAuth() {
   if (!store.isAuthenticated()) {
-    navigate('/login');
+    window.location.hash = '#/login';
     return false;
   }
 

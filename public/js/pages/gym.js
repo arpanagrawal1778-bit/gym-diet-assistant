@@ -7,6 +7,7 @@ import {
 } from '../components.js';
 
 let currentPlan = null;
+let todayCompletions = new Set();
 
 const DAYS = [
   'Mon',
@@ -20,13 +21,29 @@ const DAYS = [
 
 export async function render(container) {
   currentPlan = null;
+  todayCompletions.clear();
 
   showLoading(
     container,
     'Loading your personalized gym plan...'
   );
 
-  const result = await api.get('/plans/gym');
+  const [result, progressResult] = await Promise.all([
+    api.get('/plans/gym'),
+    api.get('/progress?log_type=workout_completion&limit=100')
+  ]);
+
+  const todayIST = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+  }).format(new Date());
+
+  if (progressResult.success && progressResult.data) {
+    progressResult.data.forEach(log => {
+      if (log.value_json?.completed_date === todayIST) {
+        todayCompletions.add(log.value_json.workout_name);
+      }
+    });
+  }
 
   if (!result.success) {
     container.innerHTML = `
@@ -459,6 +476,31 @@ function renderPlan(container, plan) {
     );
 
   }
+
+  const completeBtns = container.querySelectorAll('.complete-workout-btn');
+  completeBtns.forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const workoutName = btn.dataset.workoutName;
+      if (!workoutName || btn.disabled) return;
+
+      setButtonLoading(btn, true, 'Saving...');
+
+      const res = await api.post('/progress/workout-complete', { workout_name: workoutName });
+
+      if (!res.success) {
+        setButtonLoading(btn, false, 'Mark as Done');
+        showToast(res.error?.message || 'Could not complete workout.', 'error');
+        return;
+      }
+
+      todayCompletions.add(workoutName);
+      setButtonLoading(btn, false, '✓ Completed today');
+      btn.disabled = true;
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-secondary', 'completed');
+      showToast(res.message || 'Workout marked as completed', 'success');
+    });
+  });
 }
 
 
@@ -693,6 +735,16 @@ function renderWorkouts(workouts) {
                 `
                 : ''
             }
+
+            <div class="workout-action" style="margin-top: 1rem;">
+              <button 
+                class="btn ${todayCompletions.has(name) ? 'btn-secondary completed' : 'btn-primary'} complete-workout-btn" 
+                data-workout-name="${escapeHtml(name)}"
+                ${todayCompletions.has(name) ? 'disabled' : ''}
+              >
+                ${todayCompletions.has(name) ? '✓ Completed today' : 'Mark as Done'}
+              </button>
+            </div>
 
           </article>
         `;

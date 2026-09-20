@@ -72,7 +72,7 @@ export function render(container) {
     const result = await login(email, password);
 
     if (result.success) {
-      navigate('/dashboard');
+      window.location.hash = '#/dashboard';
       return;
     }
 

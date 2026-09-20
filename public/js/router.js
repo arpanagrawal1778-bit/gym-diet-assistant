@@ -115,6 +115,20 @@ export function navigate(hash) {
   }
 
   /* =========================================
+     AUTH PAGES (LOGIN/REGISTER)
+  ========================================= */
+
+  const authPages = ['login', 'register'];
+
+  if (
+    authPages.includes(page) &&
+    store.isAuthenticated()
+  ) {
+    window.location.hash = '#/dashboard';
+    return;
+  }
+
+  /* =========================================
      SHOW APPLICATION
   ========================================= */
 

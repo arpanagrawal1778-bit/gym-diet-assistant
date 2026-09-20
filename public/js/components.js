@@ -192,18 +192,28 @@ function initCommonUI(user = null) {
   const main = document.querySelector('.main');
   const topbar = document.querySelector('.topbar');
   const userCard = document.getElementById('userCard');
+  const sidebar = document.getElementById('sidebar');
 
-  // For unauthenticated users we simply clear dynamic sections.
+  // For unauthenticated users we hide the app shell elements
   if (!user) {
-    if (topNav) {
-      // No sidebar to hide; keep top navigation visible.
+    if (sidebar) sidebar.style.display = 'none';
+    if (topbar) topbar.style.display = 'none';
+    if (main) {
+      main.style.marginLeft = '0';
+      main.style.width = '100%';
     }
     if (topbar) topbar.innerHTML = '';
     if (userCard) userCard.innerHTML = '';
     return;
   }
 
-  // Authenticated state – populate topbar and user card.
+  // Authenticated state – restore layout and populate topbar and user card.
+  if (sidebar) sidebar.style.display = '';
+  if (topbar) topbar.style.display = '';
+  if (main) {
+    main.style.marginLeft = '';
+    main.style.width = '';
+  }
   const safeName = escapeHtml(user.name || 'User');
   const safeEmail = escapeHtml(user.email || '');
 
