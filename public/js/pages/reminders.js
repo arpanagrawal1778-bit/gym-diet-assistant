@@ -387,12 +387,21 @@ function renderPage(container) {
       </div>
 
 
-      <button
-        id="saveRemindersBtn"
-        class="btn btn-primary"
-      >
-        Save Preferences
-      </button>
+      <div style="display: flex; gap: 1rem; align-items: center; justify-content: flex-start; margin-top: 1rem;">
+        <button
+          id="saveRemindersBtn"
+          class="btn btn-primary"
+        >
+          Save Preferences
+        </button>
+
+        <button
+          id="testEmailBtn"
+          class="btn btn-secondary"
+        >
+          Send Test Email
+        </button>
+      </div>
 
     </section>
 
@@ -422,6 +431,15 @@ function renderPage(container) {
     ?.addEventListener(
       'click',
       saveReminders
+    );
+
+  document
+    .getElementById(
+      'testEmailBtn'
+    )
+    ?.addEventListener(
+      'click',
+      sendTestEmail
     );
 }
 
@@ -607,6 +625,28 @@ async function saveReminders() {
     'Reminder preferences saved successfully.',
     'success'
   );
+}
+
+
+/* =========================================================
+   SEND TEST EMAIL
+========================================================= */
+
+async function sendTestEmail() {
+  const button = document.getElementById('testEmailBtn');
+  if (!button) return;
+
+  setButtonLoading(button, true, 'Sending...');
+
+  const result = await api.post('/reminders/test');
+
+  setButtonLoading(button, false, 'Send Test Email');
+
+  if (result.success) {
+    showToast(result.message || 'Test email sent successfully', 'success');
+  } else {
+    showToast(result.error?.message || 'Failed to send test email', 'error');
+  }
 }
 
 

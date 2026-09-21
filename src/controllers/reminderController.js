@@ -3,6 +3,7 @@ const {
   reminderPreferencesSchema,
   formatZodError,
 } = require("../validators");
+const reminderService = require("../services/reminderService");
 
 
 /* =========================================================
@@ -204,10 +205,57 @@ async function updatePreferences(req, res, next) {
 
 
 /* =========================================================
+   SEND TEST EMAIL
+   POST /api/reminders/test
+========================================================= */
+
+async function sendTestEmailController(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user.email;
+
+    if (!userEmail) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "NO_EMAIL",
+          message: "No email address associated with your account"
+        }
+      });
+    }
+
+    const result = await reminderService.sendTestEmail(userId, userEmail);
+
+    if (result.sent) {
+      return res.json({
+        success: true,
+        message: "Test email sent successfully"
+      });
+    } else {
+      let safeMessage = "Failed to send test email";
+      if (result.error === "SMTP_NOT_CONFIGURED") {
+        safeMessage = "Email service is not configured on the server";
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: {
+          code: "SEND_FAILED",
+          message: safeMessage
+        }
+      });
+    }
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* =========================================================
    EXPORTS
 ========================================================= */
 
 module.exports = {
   getPreferences,
   updatePreferences,
+  sendTestEmailController,
 };
