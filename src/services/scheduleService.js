@@ -785,6 +785,14 @@ function eventsOverlap(
     return false;
   }
 
+  // Allow meals during college (e.g., lunch breaks)
+  if (
+    (first.type === "college" && second.type === "meal") ||
+    (first.type === "meal" && second.type === "college")
+  ) {
+    return false;
+  }
+
   const firstStart =
     parseTime(
       first.start_time

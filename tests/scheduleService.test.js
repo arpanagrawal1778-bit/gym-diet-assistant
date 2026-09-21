@@ -190,5 +190,19 @@ describe("Schedule Service", () => {
       expect(WEEKDAYS).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri"]);
       expect(WEEKENDS).toEqual(["Sat", "Sun"]);
     });
+
+    test("does not report conflict between college and meal overlapping in time", () => {
+      const dietPlan = {
+        weekly_plan: [
+          { day: "Mon", meals: [{ name: "Lunch", timing: "lunch" }] },
+        ],
+      };
+      // College from 09:00 to 15:00, lunch is generated at 13:00 (overlapping)
+      const profile = { ...baseProfile, college_start_time: "09:00", college_end_time: "15:00", college_days: JSON.stringify(["Mon"]) };
+      const schedule = generateSchedule(profile, dietPlan, null);
+      
+      expect(schedule.weekly_schedule["Mon"].conflicts).toEqual([]);
+      expect(schedule.weekly_schedule["Mon"].has_conflicts).toBe(false);
+    });
   });
 });
