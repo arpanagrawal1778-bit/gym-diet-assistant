@@ -37,6 +37,7 @@ async function createProfile(token, overrides = {}) {
     fitness_goal: "bulk",
     monthly_diet_budget: 300,
     gym_experience_level: "beginner",
+    diet_preference: "vegetarian",
     ...overrides,
   };
   return request(testServer).post("/api/profile").set("Authorization", `Bearer ${token}`).send(profile);
@@ -51,6 +52,7 @@ const baseProfile = {
   fitness_goal: "bulk",
   monthly_diet_budget: 300,
   gym_experience_level: "beginner",
+  diet_preference: "vegetarian",
 };
 
 describe("Phase 2 Integration Tests", () => {
@@ -711,13 +713,13 @@ describe("Phase 2 Integration Tests", () => {
       });
     });
 
-    describe("GET /api/plans/schedule", () => {
+    describe("GET /api/schedule", () => {
       test("get schedule after diet and gym plans exist", async () => {
         await setupUsersWithProfiles();
         await request(testServer).post("/api/plans/diet").set("Authorization", `Bearer ${userAToken}`);
         await request(testServer).post("/api/plans/gym").set("Authorization", `Bearer ${userAToken}`);
         const res = await request(testServer)
-          .get("/api/plans/schedule")
+          .get("/api/schedule")
           .set("Authorization", `Bearer ${userAToken}`);
         expect(res.status).toBe(200);
         expect(res.body.success).toBe(true);
@@ -730,7 +732,7 @@ describe("Phase 2 Integration Tests", () => {
         await request(testServer).post("/api/plans/diet").set("Authorization", `Bearer ${userAToken}`);
         await request(testServer).post("/api/plans/gym").set("Authorization", `Bearer ${userAToken}`);
         const res = await request(testServer)
-          .get("/api/plans/schedule")
+          .get("/api/schedule")
           .set("Authorization", `Bearer ${userAToken}`);
         expect(res.body.data.weekly_schedule["Mon"].is_college_day).toBe(true);
         expect(res.body.data.weekly_schedule["Sat"].is_college_day).toBe(false);
@@ -741,7 +743,7 @@ describe("Phase 2 Integration Tests", () => {
         await request(testServer).post("/api/plans/diet").set("Authorization", `Bearer ${userAToken}`);
         await request(testServer).post("/api/plans/gym").set("Authorization", `Bearer ${userAToken}`);
         const res = await request(testServer)
-          .get("/api/plans/schedule")
+          .get("/api/schedule")
           .set("Authorization", `Bearer ${userAToken}`);
         expect(res.body.data.weekly_schedule["Mon"].meals).toBeDefined();
         expect(res.body.data.weekly_schedule["Mon"].workouts).toBeDefined();
@@ -750,14 +752,14 @@ describe("Phase 2 Integration Tests", () => {
       test("auto-generates when no schedule exists", async () => {
         await setupUsersWithProfiles();
         const res = await request(testServer)
-          .get("/api/plans/schedule")
+          .get("/api/schedule")
           .set("Authorization", `Bearer ${userAToken}`);
         expect(res.status).toBe(200);
         expect(res.body.data.weekly_schedule).toBeDefined();
       });
 
       test("unauthenticated returns 401", async () => {
-        const res = await request(testServer).get("/api/plans/schedule");
+        const res = await request(testServer).get("/api/schedule");
         expect(res.status).toBe(401);
       });
 
@@ -765,20 +767,20 @@ describe("Phase 2 Integration Tests", () => {
         const db = getDb();
         db.exec("DELETE FROM profiles");
         const res = await request(testServer)
-          .get("/api/plans/schedule")
+          .get("/api/schedule")
           .set("Authorization", `Bearer ${userAToken}`);
         expect(res.status).toBe(404);
         expect(res.body.error.code).toBe("PROFILE_NOT_FOUND");
       });
     });
 
-    describe("POST /api/plans/schedule/regenerate", () => {
+    describe("POST /api/schedule/regenerate", () => {
       test("force regenerates schedule", async () => {
         await setupUsersWithProfiles();
         await request(testServer).post("/api/plans/diet").set("Authorization", `Bearer ${userAToken}`);
         await request(testServer).post("/api/plans/gym").set("Authorization", `Bearer ${userAToken}`);
         const res = await request(testServer)
-          .post("/api/plans/schedule/regenerate")
+          .post("/api/schedule/regenerate")
           .set("Authorization", `Bearer ${userAToken}`);
         expect(res.status).toBe(201);
         expect(res.body.success).toBe(true);
@@ -786,19 +788,19 @@ describe("Phase 2 Integration Tests", () => {
       });
 
       test("unauthenticated returns 401", async () => {
-        const res = await request(testServer).post("/api/plans/schedule/regenerate");
+        const res = await request(testServer).post("/api/schedule/regenerate");
         expect(res.status).toBe(401);
       });
     });
 
-    describe("GET /api/plans/schedule/history", () => {
+    describe("GET /api/schedule/history", () => {
       test("returns paginated schedule history", async () => {
         await setupUsersWithProfiles();
-        await request(testServer).get("/api/plans/schedule").set("Authorization", `Bearer ${userAToken}`);
-        await request(testServer).post("/api/plans/schedule/regenerate").set("Authorization", `Bearer ${userAToken}`);
+        await request(testServer).get("/api/schedule").set("Authorization", `Bearer ${userAToken}`);
+        await request(testServer).post("/api/schedule/regenerate").set("Authorization", `Bearer ${userAToken}`);
 
         const res = await request(testServer)
-          .get("/api/plans/schedule/history")
+          .get("/api/schedule/history")
           .set("Authorization", `Bearer ${userAToken}`);
         expect(res.status).toBe(200);
         expect(Array.isArray(res.body.data)).toBe(true);
@@ -807,7 +809,7 @@ describe("Phase 2 Integration Tests", () => {
       });
 
       test("unauthenticated returns 401", async () => {
-        const res = await request(testServer).get("/api/plans/schedule/history");
+        const res = await request(testServer).get("/api/schedule/history");
         expect(res.status).toBe(401);
       });
     });
@@ -839,7 +841,7 @@ describe("Phase 2 Integration Tests", () => {
 
       test("schedule is persisted to database", async () => {
         await setupUsersWithProfiles();
-        await request(testServer).get("/api/plans/schedule").set("Authorization", `Bearer ${userAToken}`);
+        await request(testServer).get("/api/schedule").set("Authorization", `Bearer ${userAToken}`);
 
         const db = getDb();
         const count = db.prepare("SELECT COUNT(*) as count FROM schedules WHERE user_id = ?").get(userIdA).count;

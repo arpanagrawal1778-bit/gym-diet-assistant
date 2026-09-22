@@ -157,7 +157,7 @@ describe("Gym Plan Service", () => {
       };
       const result = validateLlmGymPlan(plan, [{ category: "knee", detail: "" }]);
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes("rest day"))).toBe(true);
+      expect(result.errors.some((e) => e.includes("rest or recovery day"))).toBe(true);
     });
 
     test("passes when no injuries (no injury validation needed)", () => {

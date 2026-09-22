@@ -1,4 +1,5 @@
 const path = require('path');
+jest.mock('dotenv', () => ({ config: jest.fn() }));
 
 describe('Email Service', () => {
   let originalEnv;
