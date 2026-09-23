@@ -1,5 +1,6 @@
 const env = require("../config/env");
 const { EXERCISES } = require("../constants/exercises");
+const { GoogleGenAI } = require("@google/genai");
 
 
 /* =========================================================
@@ -24,7 +25,7 @@ function buildDietPlanPrompt(
 ) {
   const safeAllergies =
     Array.isArray(allergies) &&
-    allergies.length > 0
+      allergies.length > 0
       ? allergies.join(", ")
       : "none";
 
@@ -36,19 +37,20 @@ function buildDietPlanPrompt(
   const dietRules =
     profile.diet_preference === "non_vegetarian"
       ? [
-          "Non-vegetarian meals are allowed.",
-          "Meat, chicken, fish, eggs and seafood may be used when appropriate.",
-          "Still strictly avoid every listed allergy.",
-        ]
+        "Non-vegetarian meals are allowed.",
+        "Meat, chicken, fish, eggs and seafood may be used when appropriate.",
+        "Still strictly avoid every listed allergy.",
+      ]
       : [
-          "STRICTLY VEGETARIAN.",
-          "Do NOT include meat.",
-          "Do NOT include chicken.",
-          "Do NOT include fish.",
-          "Do NOT include seafood or shellfish.",
-          "Do NOT include eggs.",
-          "Dairy products are allowed unless the user lists dairy or milk as an allergy.",
-        ];
+        "STRICTLY VEGETARIAN.",
+        "Do NOT include meat.",
+        "Do NOT include chicken.",
+        "Do NOT include fish.",
+        "Do NOT include seafood or shellfish.",
+        "Do NOT include eggs.",
+        "Dairy products are allowed unless the user lists dairy or milk as an allergy.",
+        "WARNING: The application uses a strict substring validator. Do NOT use the exact words 'meat', 'egg', 'chicken', 'fish', 'ham', or 'seafood' anywhere in the response, not even as part of other words (e.g. avoid 'meatless', 'eggplant', 'hamburger'). Use safe alternatives like 'plant-based', 'aubergine', or 'veggie patty'.",
+      ];
 
   return [
     "You are generating a personalized weekly meal plan for a fitness application.",
@@ -195,18 +197,17 @@ function buildGymPlanPrompt(
 ) {
   const injurySummary =
     Array.isArray(injuries) &&
-    injuries.length > 0
+      injuries.length > 0
       ? injuries
-          .map((injury) => {
-            if (typeof injury === "string") {
-              return injury;
-            }
+        .map((injury) => {
+          if (typeof injury === "string") {
+            return injury;
+          }
 
-            return `${injury.category}: ${
-              injury.detail || "unspecified"
+          return `${injury.category}: ${injury.detail || "unspecified"
             }`;
-          })
-          .join("; ")
+        })
+        .join("; ")
       : "none";
 
   const exerciseCatalog =
@@ -263,11 +264,9 @@ function buildGymPlanPrompt(
     "",
     "USER INFORMATION:",
     `Fitness goal: ${fitnessGoal}`,
-    `Gym experience level: ${
-      profile.gym_experience_level || "beginner"
+    `Gym experience level: ${profile.gym_experience_level || "beginner"
     }`,
-    `Activity level: ${
-      profile.activity_level || "unknown"
+    `Activity level: ${profile.activity_level || "unknown"
     }`,
     `Age: ${profile.age || "unknown"}`,
     `Weight: ${profile.weight || "unknown"} kg`,
@@ -324,60 +323,27 @@ async function callLLM(
   prompt,
   options = {}
 ) {
-  const response = await fetch(
-    env.llmBaseUrl + "/chat/completions",
-    {
-      method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-        Authorization:
-          `Bearer ${env.llmApiKey}`,
-      },
-
-      body: JSON.stringify({
-        model: env.llmModel,
-
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-
-        temperature:
-          options.temperature !== undefined
-            ? options.temperature
-            : 0.7,
-
-        max_tokens:
-          options.maxTokens || 4096,
-      }),
+  const client = new GoogleGenAI({ apiKey: env.llmApiKey });
+  const interaction = await client.interactions.create({
+    model: env.llmModel,
+    input: prompt,
+    generation_config: {
+      temperature:
+        options.temperature !== undefined
+          ? options.temperature
+          : 0.7,
+    },
+    response_format: {
+      type: "text",
+      mime_type: "application/json"
     }
-  );
+  });
 
-  if (!response.ok) {
-    const errText =
-      await response.text();
-
-    throw new Error(
-      `LLM API error: ${response.status} ${errText}`
-    );
+  if (!interaction.output_text) {
+    throw new Error("LLM returned no content");
   }
 
-  const data =
-    await response.json();
-
-  const content =
-    data.choices?.[0]?.message?.content;
-
-  if (!content) {
-    throw new Error(
-      "LLM returned no content"
-    );
-  }
-
-  return content.trim();
+  return interaction.output_text.trim();
 }
 
 

@@ -590,6 +590,9 @@ async function generateGymPlan(
         );
 
       if (validated.valid) {
+        if (env.nodeEnv === "development") {
+          console.log("LLM gym plan generated successfully using Gemini");
+        }
         return {
           plan: {
             type: "ai_generated",

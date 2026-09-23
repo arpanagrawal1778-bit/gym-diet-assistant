@@ -809,6 +809,9 @@ async function generateDietPlan(
         );
 
       if (validated.valid) {
+        if (env.nodeEnv === "development") {
+          console.log("LLM diet plan generated successfully using Gemini");
+        }
 
         return {
           plan: {

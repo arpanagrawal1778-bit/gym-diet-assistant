@@ -1,3 +1,11 @@
+jest.mock("../src/services/llmService", () => {
+  const actual = jest.requireActual("../src/services/llmService");
+  return {
+    ...actual,
+    isConfigured: jest.fn(() => false),
+    callLLM: jest.fn(() => Promise.reject(new Error("Mocked LLM error")))
+  };
+});
 const {
   generateGymPlan,
   generateRuleBasedGymPlan,
